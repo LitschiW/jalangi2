@@ -1048,8 +1048,10 @@ if (typeof J$ === 'undefined') {
                                     ident, false, true));
                             }
                         }
-                        if (scope.vars[name] === "var") {
+                        if (scope.vars[name] === "var" || (scope.vars[name].type && scope.vars[name].type === "var")) {
                             if (!Config.INSTR_INIT || Config.INSTR_INIT(node)) {
+                                if(Config.ASSIGN_LINES_TO_DECLARATIONS)
+                                    node = scope.vars[name].node;
                                 ret = ret.concat(createCallInitAsStatement(node,
                                     createLiteralAst(name),
                                     createIdentifierAst(name),
@@ -1657,6 +1659,9 @@ if (typeof J$ === 'undefined') {
                 tmpScope.funLocs[name] = loc;
                 tmpScope.funNodes[name] = node;
             }
+            if(type === 'var'){
+                tmpScope.vars[name] = {type: 'var', node: node};
+            }
         };
 
         Scope.prototype.hasOwnVar = function (name) {
@@ -1744,7 +1749,7 @@ if (typeof J$ === 'undefined') {
         }
 
         function handleVar(node) {
-            currentScope.addVar(node.id.name, "var");
+            currentScope.addVar(node.id.name, "var", node.loc,node);
         }
 
         function handleCatch(node) {

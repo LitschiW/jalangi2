@@ -40,6 +40,7 @@ if (typeof J$ === 'undefined') {
     // return true in a function, if you want the ast node (passed as the second argument) to be instrumented
     // ast node gets instrumented if you do not define the corresponding function
     Config.ENABLE_SAMPLING = false;
+    Config.ASSIGN_LINES_TO_DECLARATIONS = false;//whether variable declarations are seen as part of scope or as locatable statements
 //    Config.INSTR_INIT = function(name, ast) { return false; };
 //    Config.INSTR_READ = function(name, ast) { return false; };
 //    Config.INSTR_WRITE = function(name, ast) { return true; };

@@ -57,6 +57,7 @@ function setupConfig(instHandler) {
     conf.INSTR_UNARY = instHandler.instrUnary;
     conf.INSTR_LITERAL = instHandler.instrLiteral;
     conf.INSTR_CONDITIONAL = instHandler.instrConditional;
+    conf.ASSIGN_LINES_TO_DECLARATIONS = instHandler.assignLinesToDeclarations;
 }
 
 /**
