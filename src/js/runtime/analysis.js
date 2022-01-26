@@ -695,6 +695,10 @@ if (typeof J$ === 'undefined') {
     // C1 is invoked with value of x
     function C1(iid, left) {
         switchLeft = left;
+
+        if(sandbox.analysis && sandbox.analysis.switchInit) {
+            sandbox.analysis.switchInit(iid, left);
+        }
         return (lastComputedValue = left);
     }
 
@@ -716,6 +720,12 @@ if (typeof J$ === 'undefined') {
             }
         }
         return (lastComputedValue = right);
+    }
+
+    function C3() {
+        if(sandbox.analysis && sandbox.analysis.switchExit) {
+            sandbox.analysis.switchExit();
+        }
     }
 
     // Expression in conditional
@@ -776,7 +786,8 @@ if (typeof J$ === 'undefined') {
     sandbox.B = B; // Binary operation
     sandbox.C = C; // Condition
     sandbox.C1 = C1; // Switch key
-    sandbox.C2 = C2; // case label C1 === C2
+    sandbox.C2 = C2; // case label C1 === C2#
+    sandbox.C3 = C3; // Switch exit key
     sandbox._ = last;  // Last value passed to C
 
     sandbox.H = H; // hash in for-in

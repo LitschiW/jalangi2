@@ -99,6 +99,7 @@ if (typeof J$ === 'undefined') {
     var logConditionalFunName = JALANGI_VAR + ".C";
     var logSwitchLeftFunName = JALANGI_VAR + ".C1";
     var logSwitchRightFunName = JALANGI_VAR + ".C2";
+    var logSwitchExitFunName = JALANGI_VAR + ".C3";
     var logLastFunName = JALANGI_VAR + "._";
     var logX1FunName = JALANGI_VAR + ".X1";
 
@@ -789,6 +790,37 @@ if (typeof J$ === 'undefined') {
         } else {
             return node;
         }
+    }
+
+    function createSwitchExitNode(switchNode){
+        const exit_node = {
+          type: Syntax.ExpressionStatement,
+          start: switchNode.end + 1,
+          end: switchNode.end + 1 + (JALANGI_VAR + ".C3()".length),
+          expression: {
+            type: Syntax.CallExpression,
+            arguments: [],
+            callee: {
+              type: Syntax.MemberExpression,
+              computed: false,
+              object: {
+                type: Syntax.Identifier,
+                name: JALANGI_VAR,
+                start: switchNode.end + 1,
+                end: switchNode.end + 1 + JALANGI_VAR.length,
+              },
+              property: {
+                type: Syntax.Identifier,
+                name: "C3",
+                start: switchNode.end + 1 + JALANGI_VAR.length +1,
+                end: switchNode.end + 1 + JALANGI_VAR.length + 1 + "C3".length,
+            },
+            },
+          },
+        };
+        transferLoc(exit_node.expression, exit_node);
+        return exit_node;
+
     }
 
     function wrapWith(node) {
@@ -1601,6 +1633,9 @@ if (typeof J$ === 'undefined') {
             return ret;
         },
         "SwitchStatement": function (node) {
+            const block = {type: Syntax.BlockStatement, body: []}
+
+            //wrap switch discriminant and cases
             var dis = wrapSwitchDiscriminant(node.discriminant, node.discriminant);
             dis = wrapWithX1(node.discriminant, dis);
             var cases = MAP(node.cases, function (acase) {
@@ -1613,7 +1648,15 @@ if (typeof J$ === 'undefined') {
             });
             node.discriminant = dis;
             node.cases = cases;
-            return node;
+            block.body.push(node);
+
+            //add signaling node for J$.C3()
+            const signal_node = createSwitchExitNode(node);
+            block.body.push(signal_node);
+
+            //roughly adjust block location
+            transferLoc(block, node);
+            return block;
         },
         "FunctionExpression": function (node) {
             node.body.body = wrapFunBodyWithTryCatch(node, node.body.body);
