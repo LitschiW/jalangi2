@@ -40,7 +40,8 @@
             "literal", "onReady","putFieldPre",
             "putField", "read", "runInstrumentedFunctionBody",
             "scriptEnter", "scriptExit",  "unaryPre",
-            "unary", "write","switchInit","switchExit"];
+            "unary", "write", "switchInit", "switchExit",
+            "enterDefaultCase", "enterCase"];
 
         this.globals = {};
 

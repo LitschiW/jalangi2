@@ -703,7 +703,7 @@ if (typeof J$ === 'undefined') {
     }
 
     // case label inside switch
-    function C2(iid, right) {
+  function C2(iid, break_iid, right) {
         var aret, result;
 
         // avoid iid collision; iid may not have a map in the sourcemap
@@ -719,6 +719,9 @@ if (typeof J$ === 'undefined') {
                 }
             }
         }
+    if (result && sandbox.analysis && sandbox.analysis.enterCase) {
+      sandbox.analysis.enterCase(iid, break_iid);
+    }
         return (lastComputedValue = right);
     }
 
@@ -727,6 +730,12 @@ if (typeof J$ === 'undefined') {
             sandbox.analysis.switchExit();
         }
     }
+
+  function D1(iid, break_iid) {
+    if (sandbox.analysis && sandbox.analysis.enterDefaultCase) {
+      sandbox.analysis.enterDefaultCase(iid, break_iid);
+    }
+  }
 
     // Expression in conditional
     function C(iid, left) {
@@ -788,7 +797,7 @@ if (typeof J$ === 'undefined') {
     sandbox.C1 = C1; // Switch key
     sandbox.C2 = C2; // case label C1 === C2#
     sandbox.C3 = C3; // Switch exit key
-    sandbox._ = last;  // Last value passed to C
+    sandbox.D1 = D1; // Default case enter key
 
     sandbox.H = H; // hash in for-in
     sandbox.I = I; // Ignore argument

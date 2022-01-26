@@ -777,51 +777,77 @@ if (typeof J$ === 'undefined') {
         }
     }
 
-    function wrapSwitchTest(node, test) {
-        if (!Config.INSTR_CONDITIONAL || Config.INSTR_CONDITIONAL("switch", node)) {
-            printCondIidToLoc(node);
-            var ret = replaceInExpr(
-                logSwitchRightFunName + "(" + RP + "1, " + RP + "2)",
-                getCondIid(),
-                test
-            );
-            transferLoc(ret, node);
-            return ret;
-        } else {
-            return node;
-        }
+  function wrapSwitchTest(caseNode) {
+    var break_node = createBreakStatementIfPossible(caseNode);
+    const testNode = caseNode.test;
+    if (
+      !Config.INSTR_CONDITIONAL ||
+      Config.INSTR_CONDITIONAL("switch", testNode)
+    ) {
+      printCondIidToLoc(testNode);
+      var ret = replaceInExpr(
+        logSwitchRightFunName + "(" + RP + "1, " + RP + "2, " + RP + "3)",
+        getCondIid(),
+        break_node,
+        testNode
+      );
+      transferLoc(ret, testNode);
+      return ret;
+    } else {
+      return testNode;
     }
-
-    function createSwitchExitNode(switchNode){
-        const exit_node = {
-          type: Syntax.ExpressionStatement,
-          start: switchNode.end + 1,
-          end: switchNode.end + 1 + (JALANGI_VAR + ".C3()".length),
-          expression: {
-            type: Syntax.CallExpression,
-            arguments: [],
-            callee: {
-              type: Syntax.MemberExpression,
-              computed: false,
-              object: {
-                type: Syntax.Identifier,
-                name: JALANGI_VAR,
-                start: switchNode.end + 1,
-                end: switchNode.end + 1 + JALANGI_VAR.length,
-              },
-              property: {
-                type: Syntax.Identifier,
-                name: "C3",
-                start: switchNode.end + 1 + JALANGI_VAR.length +1,
-                end: switchNode.end + 1 + JALANGI_VAR.length + 1 + "C3".length,
-            },
-            },
-          },
-        };
-        transferLoc(exit_node.expression, exit_node);
-        return exit_node;
-
+  }
+  
+  function createBreakStatementIfPossible(caseNode) {
+    var break_nodes = caseNode.consequent.filter(
+      (node) => node.type === Syntax.BreakStatement
+    );
+    if (break_nodes.length > 0) {
+      printCondIidToLoc(break_nodes[0]);
+      return getCondIid();
+    } else {
+      return createIdentifierAst("undefined");
     }
+  }
+
+  function createSwitchExitNode(switchNode) {
+    const exit_node = {
+      type: Syntax.ExpressionStatement,
+      expression: {
+        type: Syntax.CallExpression,
+        arguments: [],
+        callee: {
+          type: Syntax.MemberExpression,
+          computed: false,
+          object: createIdentifierAst(JALANGI_VAR),
+          property: createIdentifierAst("C3"),
+        },
+      },
+    };
+    transferLoc(exit_node.expression, exit_node);
+    return exit_node;
+  }
+
+  function createDefaultCaseNotifierNode(defaultCaseNode) {
+    var break_node = createBreakStatementIfPossible(defaultCaseNode);
+
+    printCondIidToLoc(defaultCaseNode);
+    const notifierNode = {
+      type: Syntax.ExpressionStatement,
+      expression: {
+        type: Syntax.CallExpression,
+        arguments: [getCondIid(), break_node],
+        callee: {
+          type: Syntax.MemberExpression,
+          computed: false,
+          object: createIdentifierAst(JALANGI_VAR),
+          property: createIdentifierAst("D1"),
+        },
+      },
+    };
+
+    return notifierNode;
+  }
 
     function wrapWith(node) {
         if (!Config.INSTR_CONDITIONAL || Config.INSTR_CONDITIONAL("with", node)) {
@@ -1641,8 +1667,11 @@ if (typeof J$ === 'undefined') {
             var cases = MAP(node.cases, function (acase) {
                 var test;
                 if (acase.test) {
-                    test = wrapSwitchTest(acase.test, acase.test);
+          test = wrapSwitchTest(acase);
                     acase.test = wrapWithX1(acase.test, test);
+                } else {
+                  const defaultNotifierNode = createDefaultCaseNotifierNode(acase);
+                  acase.consequent.splice(0, 0, defaultNotifierNode);
                 }
                 return acase;
             });
