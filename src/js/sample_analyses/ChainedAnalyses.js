@@ -31,7 +31,7 @@
             }
         }
 
-        var funList = ["_return", "_throw", "_with",
+        var funList = ["_return", "_throw", "_with", "_break",
             "binaryPre", "binary", "conditional",
             "declare", "endExecution", "endExpression",
             "forinObject", "functionEnter", "functionExit",

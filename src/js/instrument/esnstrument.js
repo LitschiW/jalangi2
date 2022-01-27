@@ -99,7 +99,7 @@ if (typeof J$ === 'undefined') {
     var logConditionalFunName = JALANGI_VAR + ".C";
     var logSwitchLeftFunName = JALANGI_VAR + ".C1";
     var logSwitchRightFunName = JALANGI_VAR + ".C2";
-    var logConditionalExit = JALANGI_VAR + ".C3";
+    var logConditionalExit = JALANGI_VAR + ".CE";
     var logLastFunName = JALANGI_VAR + "._";
     var logX1FunName = JALANGI_VAR + ".X1";
 
@@ -778,7 +778,6 @@ if (typeof J$ === 'undefined') {
     }
 
   function wrapSwitchTest(caseNode) {
-    var break_node = createBreakStatementIfPossible(caseNode);
     const testNode = caseNode.test;
     if (
       !Config.INSTR_CONDITIONAL ||
@@ -786,9 +785,8 @@ if (typeof J$ === 'undefined') {
     ) {
       printCondIidToLoc(testNode);
       var ret = replaceInExpr(
-        logSwitchRightFunName + "(" + RP + "1, " + RP + "2, " + RP + "3)",
+        logSwitchRightFunName + "(" + RP + "1, " + RP + "2)",
         getCondIid(),
-        break_node,
         testNode
       );
       transferLoc(ret, testNode);
@@ -820,7 +818,7 @@ if (typeof J$ === 'undefined') {
           type: Syntax.MemberExpression,
           computed: false,
           object: createIdentifierAst(JALANGI_VAR),
-          property: createIdentifierAst("C3"),
+          property: createIdentifierAst("CE"),
         },
       },
     };
@@ -828,24 +826,30 @@ if (typeof J$ === 'undefined') {
     return exit_node;
   }
 
-  function createDefaultCaseNotifierNode(defaultCaseNode) {
-    var break_node = createBreakStatementIfPossible(defaultCaseNode);
 
-    printCondIidToLoc(defaultCaseNode);
+  function createCaseEnterNotfier(caseNode) {
+    return createConditionalNotiferNode(caseNode,"C3");
+  }
+
+  function createBreakNotifier(breakNode){
+    return createConditionalNotiferNode(breakNode,"BR");
+  }
+
+  function createConditionalNotiferNode(node, nofierFuncName){
+    printCondIidToLoc(node);
     const notifierNode = {
       type: Syntax.ExpressionStatement,
       expression: {
         type: Syntax.CallExpression,
-        arguments: [getCondIid(), break_node],
+        arguments: [getCondIid()],
         callee: {
           type: Syntax.MemberExpression,
           computed: false,
           object: createIdentifierAst(JALANGI_VAR),
-          property: createIdentifierAst("D1"),
+          property: createIdentifierAst(nofierFuncName),
         },
       },
     };
-
     return notifierNode;
   }
 
@@ -1605,10 +1609,12 @@ if (typeof J$ === 'undefined') {
             node.argument = wrapWithX1(node, ret);
             return node;
         },
-
         "ExpressionStatement": function (node) {
             node.expression = wrapWithX1(node, node.expression);
             return node;
+        },
+        "BreakStatement": function (node) {
+            return {type: "BlockStatement", body: [createBreakNotifier(node), node]};
         }
     };
 
@@ -1673,19 +1679,18 @@ if (typeof J$ === 'undefined') {
             var cases = MAP(node.cases, function (acase) {
                 var test;
                 if (acase.test) {
-          test = wrapSwitchTest(acase);
+                    test = wrapSwitchTest(acase);
                     acase.test = wrapWithX1(acase.test, test);
-                } else {
-                  const defaultNotifierNode = createDefaultCaseNotifierNode(acase);
-                  acase.consequent.splice(0, 0, defaultNotifierNode);
                 }
+                const defaultNotifierNode = createCaseEnterNotfier(acase);
+                acase.consequent.splice(0, 0, defaultNotifierNode);
                 return acase;
             });
             node.discriminant = dis;
             node.cases = cases;
             block.body.push(node);
 
-            //add signaling node for J$.C3()
+            //add signaling node for J$.CE()
             const signal_node = createConditonalExitNode(true);
             block.body.push(signal_node);
 

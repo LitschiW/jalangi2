@@ -696,14 +696,14 @@ if (typeof J$ === 'undefined') {
     function C1(iid, left) {
         switchLeft = left;
 
-        if(sandbox.analysis && sandbox.analysis.switchInit) {
+        if(sandbox.analysis && sandbox.analysis.switchEnter) {
             sandbox.analysis.switchEnter(iid, left);
         }
         return (lastComputedValue = left);
     }
 
     // case label inside switch
-  function C2(iid, break_iid, right) {
+  function C2(iid, right) {
         var aret, result;
 
         // avoid iid collision; iid may not have a map in the sourcemap
@@ -719,21 +719,25 @@ if (typeof J$ === 'undefined') {
                 }
             }
         }
-    if (result && sandbox.analysis && sandbox.analysis.enterCase) {
-      sandbox.analysis.enterCase(iid, break_iid);
-    }
         return (lastComputedValue = right);
     }
 
-    function C3(isSwitch) {
+    function C3(iid) {
+      if (sandbox.analysis && sandbox.analysis.enterCase) {
+        sandbox.analysis.enterCase(iid);
+      }
+    }
+
+    function CE(isSwitch) {
         if(sandbox.analysis && sandbox.analysis.switchExit) {
             sandbox.analysis.conditionalExit(createBitPattern(isSwitch));
         }
     }
 
-  function D1(iid, break_iid) {
-    if (sandbox.analysis && sandbox.analysis.enterDefaultCase) {
-      sandbox.analysis.enterDefaultCase(iid, break_iid);
+
+  function BR(iid){
+    if (sandbox.analysis && sandbox.analysis._break) {
+        sandbox.analysis._break(iid);
     }
   }
 
@@ -796,8 +800,9 @@ if (typeof J$ === 'undefined') {
     sandbox.C = C; // Condition
     sandbox.C1 = C1; // Switch key
     sandbox.C2 = C2; // case label C1 === C2#
-    sandbox.C3 = C3; // Switch exit key
-    sandbox.D1 = D1; // Default case enter key
+    sandbox.C3 = C3; // case entered
+    sandbox.CE = CE; // conditonal exit
+    sandbox.BR = BR; // break notifier
 
     sandbox.H = H; // hash in for-in
     sandbox.I = I; // Ignore argument
