@@ -697,7 +697,7 @@ if (typeof J$ === 'undefined') {
         switchLeft = left;
 
         if(sandbox.analysis && sandbox.analysis.switchInit) {
-            sandbox.analysis.switchInit(iid, left);
+            sandbox.analysis.switchEnter(iid, left);
         }
         return (lastComputedValue = left);
     }
@@ -710,7 +710,7 @@ if (typeof J$ === 'undefined') {
         result = B(iid+1, "===", switchLeft, right, createBitPattern(false, false, true));
 
         if (sandbox.analysis && sandbox.analysis.conditional) {
-            aret = sandbox.analysis.conditional(iid, result);
+            aret = sandbox.analysis.conditional(iid, result, createBitPattern(true));
             if (aret) {
                 if (result && !aret.result) {
                     right = !right;
@@ -725,9 +725,9 @@ if (typeof J$ === 'undefined') {
         return (lastComputedValue = right);
     }
 
-    function C3() {
+    function C3(isSwitch) {
         if(sandbox.analysis && sandbox.analysis.switchExit) {
-            sandbox.analysis.switchExit();
+            sandbox.analysis.conditionalExit(createBitPattern(isSwitch));
         }
     }
 
@@ -741,7 +741,7 @@ if (typeof J$ === 'undefined') {
     function C(iid, left) {
         var aret;
         if (sandbox.analysis && sandbox.analysis.conditional) {
-            aret = sandbox.analysis.conditional(iid, left);
+            aret = sandbox.analysis.conditional(iid, left, createBitPattern(false));
             if (aret) {
                 left = aret.result;
             }

@@ -99,7 +99,7 @@ if (typeof J$ === 'undefined') {
     var logConditionalFunName = JALANGI_VAR + ".C";
     var logSwitchLeftFunName = JALANGI_VAR + ".C1";
     var logSwitchRightFunName = JALANGI_VAR + ".C2";
-    var logSwitchExitFunName = JALANGI_VAR + ".C3";
+    var logConditionalExit = JALANGI_VAR + ".C3";
     var logLastFunName = JALANGI_VAR + "._";
     var logX1FunName = JALANGI_VAR + ".X1";
 
@@ -810,12 +810,12 @@ if (typeof J$ === 'undefined') {
     }
   }
 
-  function createSwitchExitNode(switchNode) {
+  function createConditonalExitNode(isSwitch) {
     const exit_node = {
       type: Syntax.ExpressionStatement,
       expression: {
         type: Syntax.CallExpression,
-        arguments: [],
+        arguments: [createLiteralAst(isSwitch)],
         callee: {
           type: Syntax.MemberExpression,
           computed: false,
@@ -1613,12 +1613,18 @@ if (typeof J$ === 'undefined') {
     };
 
     function funCond(node) {
+        const wrapperBlock = {type: 'BlockStatement', body: []};
+
         var ret = wrapConditional(node.test, node.test);
         node.test = ret;
         node.test = wrapWithX1(node, node.test);
         node.init = wrapWithX1(node, node.init);
         node.update = wrapWithX1(node, node.update);
-        return node;
+
+        wrapperBlock.body.push(node)
+        wrapperBlock.body.push(createConditonalExitNode(false))
+        transferLoc(node,wrapperBlock);
+        return wrapperBlock;
     }
 
 
@@ -1680,7 +1686,7 @@ if (typeof J$ === 'undefined') {
             block.body.push(node);
 
             //add signaling node for J$.C3()
-            const signal_node = createSwitchExitNode(node);
+            const signal_node = createConditonalExitNode(true);
             block.body.push(signal_node);
 
             //roughly adjust block location
