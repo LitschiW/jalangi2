@@ -796,19 +796,7 @@ if (typeof J$ === 'undefined') {
     }
   }
   
-  function createBreakStatementIfPossible(caseNode) {
-    var break_nodes = caseNode.consequent.filter(
-      (node) => node.type === Syntax.BreakStatement
-    );
-    if (break_nodes.length > 0) {
-      printCondIidToLoc(break_nodes[0]);
-      return getCondIid();
-    } else {
-      return createIdentifierAst("undefined");
-    }
-  }
-
-  function createConditonalExitNode(isSwitch) {
+  function createBranchExitNotifier(isSwitch) {
     const exit_node = {
       type: Syntax.ExpressionStatement,
       expression: {
@@ -827,15 +815,15 @@ if (typeof J$ === 'undefined') {
   }
 
 
-  function createCaseEnterNotfier(caseNode) {
-    return createConditionalNotiferNode(caseNode,"C3");
+  function createBranchEnterNotifier(caseNode) {
+    return createConditionalNotifierNode(caseNode,"C3");
   }
 
   function createBreakNotifier(breakNode){
-    return createConditionalNotiferNode(breakNode,"BR");
+    return createConditionalNotifierNode(breakNode,"BR");
   }
 
-  function createConditionalNotiferNode(node, nofierFuncName){
+  function createConditionalNotifierNode(node, notifierFuncName){
     printCondIidToLoc(node);
     const notifierNode = {
       type: Syntax.ExpressionStatement,
@@ -846,7 +834,7 @@ if (typeof J$ === 'undefined') {
           type: Syntax.MemberExpression,
           computed: false,
           object: createIdentifierAst(JALANGI_VAR),
-          property: createIdentifierAst(nofierFuncName),
+          property: createIdentifierAst(notifierFuncName),
         },
       },
     };
@@ -1627,8 +1615,19 @@ if (typeof J$ === 'undefined') {
         node.init = wrapWithX1(node, node.init);
         node.update = wrapWithX1(node, node.update);
 
+        const addEnterNotifierToBody = (node) => {
+            if(node){ 
+                node.body.splice(0, 0, createBranchEnterNotifier(node));
+                node.body.push(createBranchExitNotifier(false));
+            }
+        }
+        addEnterNotifierToBody(node.consequent);
+        addEnterNotifierToBody(node.alternate);
+        addEnterNotifierToBody(node.body);
+        
+
         wrapperBlock.body.push(node)
-        wrapperBlock.body.push(createConditonalExitNode(false))
+        wrapperBlock.body.push(createBranchExitNotifier(false))
         transferLoc(node,wrapperBlock);
         return wrapperBlock;
     }
@@ -1682,7 +1681,7 @@ if (typeof J$ === 'undefined') {
                     test = wrapSwitchTest(acase);
                     acase.test = wrapWithX1(acase.test, test);
                 }
-                const defaultNotifierNode = createCaseEnterNotfier(acase);
+                const defaultNotifierNode = createBranchEnterNotifier(acase);
                 acase.consequent.splice(0, 0, defaultNotifierNode);
                 return acase;
             });
@@ -1691,7 +1690,7 @@ if (typeof J$ === 'undefined') {
             block.body.push(node);
 
             //add signaling node for J$.CE()
-            const signal_node = createConditonalExitNode(true);
+            const signal_node = createBranchExitNotifier(true);
             block.body.push(signal_node);
 
             //roughly adjust block location

@@ -41,7 +41,7 @@
             "putField", "read", "runInstrumentedFunctionBody",
             "scriptEnter", "scriptExit",  "unaryPre",
             "unary", "write", "switchEnter", "conditionalExit",
-            "enterDefaultCase", "enterCase"];
+            "enterDefaultCase", "enterBranch"];
 
         this.globals = {};
 

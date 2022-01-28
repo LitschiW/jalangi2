@@ -722,14 +722,19 @@ if (typeof J$ === 'undefined') {
         return (lastComputedValue = right);
     }
 
-    function C3(iid) {
-      if (sandbox.analysis && sandbox.analysis.enterCase) {
-        sandbox.analysis.enterCase(iid);
+    function C3(iid, isElseBranch, isSwitchBranch, isForBranch) {
+      if (sandbox.analysis && sandbox.analysis.enterBranch) {
+        sandbox.analysis.enterBranch(
+          iid,
+          isElseBranch,
+          isSwitchBranch,
+          isForBranch
+        );
       }
     }
 
     function CE(isSwitch) {
-        if(sandbox.analysis && sandbox.analysis.switchExit) {
+        if(sandbox.analysis && sandbox.analysis.conditionalExit) {
             sandbox.analysis.conditionalExit(createBitPattern(isSwitch));
         }
     }
