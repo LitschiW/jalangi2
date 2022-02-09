@@ -699,6 +699,9 @@ if (typeof J$ === 'undefined') {
         if(sandbox.analysis && sandbox.analysis.switchEnter) {
             sandbox.analysis.switchEnter(iid, left);
         }
+        if (sandbox.analysis && sandbox.analysis.enterBranch) {
+        sandbox.analysis.enterBranch(iid, true, false, false, false);
+        }
         return (lastComputedValue = left);
     }
 
@@ -710,7 +713,7 @@ if (typeof J$ === 'undefined') {
         result = B(iid+1, "===", switchLeft, right, createBitPattern(false, false, true));
 
         if (sandbox.analysis && sandbox.analysis.conditional) {
-            aret = sandbox.analysis.conditional(iid, result, createBitPattern(true));
+      aret = sandbox.analysis.conditional(iid, result, true, false);
             if (aret) {
                 if (result && !aret.result) {
                     right = !right;
@@ -722,11 +725,17 @@ if (typeof J$ === 'undefined') {
         return (lastComputedValue = right);
     }
 
-    function C3(iid, isSwitch, isCase, isFor, isIf) {
-      if (sandbox.analysis && sandbox.analysis.enterBranch) {
-        sandbox.analysis.enterBranch(iid, isSwitch, isCase, isFor, isIf);
-      }
+  function C3(iid, isSwitch, isCase, isLoop, isConditional) {
+    if (sandbox.analysis && sandbox.analysis.enterBranch) {
+      sandbox.analysis.enterBranch(
+        iid,
+        isSwitch,
+        isCase,
+        isLoop,
+        isConditional
+      );
     }
+  }
 
     function CE(branchIID, isSwitch) {
         if(sandbox.analysis && sandbox.analysis.conditionalExit) {
@@ -742,10 +751,10 @@ if (typeof J$ === 'undefined') {
   }
 
     // Expression in conditional
-    function C(iid, left) {
+  function C(iid, left, isConditional = false) {
         var aret;
         if (sandbox.analysis && sandbox.analysis.conditional) {
-            aret = sandbox.analysis.conditional(iid, left, createBitPattern(false));
+      aret = sandbox.analysis.conditional(iid, left, false, isConditional);
             if (aret) {
                 left = aret.result;
             }

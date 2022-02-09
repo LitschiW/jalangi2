@@ -816,7 +816,7 @@ if (typeof J$ === 'undefined') {
   }
 
 
-  function createBranchEnterNotifier(branchParentNode, isSwitch, isCase, isFor,isIf) {    
+  function createBranchEnterNotifier(branchParentNode, isSwitch, isCase, isLoop,isIf) {    
     printCondIidToLoc(branchParentNode);
     const notifierNode = {
       type: Syntax.ExpressionStatement,
@@ -826,7 +826,7 @@ if (typeof J$ === 'undefined') {
             getCondIid(), 
             createLiteralAst(isSwitch),
             createLiteralAst(isCase),
-            createLiteralAst(isFor),
+            createLiteralAst(isLoop),
             createLiteralAst(isIf)],
         callee: {
           type: Syntax.MemberExpression,
@@ -884,9 +884,10 @@ if (typeof J$ === 'undefined') {
         if (!Config.INSTR_CONDITIONAL || Config.INSTR_CONDITIONAL("other", node)) {
             printCondIidToLoc(node);
             var ret = replaceInExpr(
-                logConditionalFunName + "(" + RP + "1, " + RP + "2)",
+                logConditionalFunName + "(" + RP + "1, " + RP + "2, " + RP + "3)",
                 getCondIid(),
-                test
+                test,
+                createLiteralAst(true)
             );
             transferLoc(ret, node);
             return ret;
@@ -1629,41 +1630,48 @@ if (typeof J$ === 'undefined') {
     };
 
     function funCond(node) {
-        const wrapperBlock = {type: 'BlockStatement', body: []};
-        const branchIID = condIid;
+      const wrapperBlock = { type: "BlockStatement", body: [] };
+      const branchIID = condIid;
 
-        if(node.type === "IfStatement") {
-            wrapperBlock.body.push(createBranchEnterNotifier(node,false,false,false,true))
+      wrapperBlock.body.push(
+        createBranchEnterNotifier(
+          node,
+          false,
+          false,
+          [Syntax.ForInStatement, Syntax.ForStatement, Syntax.WhileStatement]
+          .includes(node.type),
+          [Syntax.IfStatement,Syntax.ConditionalExpression]
+          .includes(node.type)
+        )
+      );
+
+      var ret = wrapConditional(node.test, node.test);
+      node.test = ret;
+      node.test = wrapWithX1(node, node.test);
+      node.init = wrapWithX1(node, node.init);
+      node.update = wrapWithX1(node, node.update);
+
+      const addEnterNotifierToBody = (bodyNode) => {
+        if (bodyNode) {
+          const branchIid = condIid;
+          bodyNode.body.splice(
+            0,
+            0,
+            createBranchEnterNotifier(bodyNode, false, false, false, true)
+          );
+          bodyNode.body.push(createBranchExitNotifier(false, branchIid));
         }
+      };
 
-
-        var ret = wrapConditional(node.test, node.test);
-        node.test = ret;
-        node.test = wrapWithX1(node, node.test);
-        node.init = wrapWithX1(node, node.init);
-        node.update = wrapWithX1(node, node.update);
-
-        const addEnterNotifierToBody = (bodyNode) => {
-            if (bodyNode) {
-              const branchIid = condIid;
-              bodyNode.body.splice(0, 0, createBranchEnterNotifier(bodyNode,
-                false,
-                false,
-                node.type===Syntax.ForStatement,
-                node.type===Syntax.IfStatement));            
-              bodyNode.body.push(createBranchExitNotifier(false, branchIid));
-              
-            }
-        }
+      if (node.consequent) {
         addEnterNotifierToBody(node.consequent);
         addEnterNotifierToBody(node.alternate);
-        addEnterNotifierToBody(node.body);
-        
+      }
 
-        wrapperBlock.body.push(node)
-        wrapperBlock.body.push(createBranchExitNotifier(false, branchIID))
-        transferLoc(node,wrapperBlock);
-        return wrapperBlock;
+      wrapperBlock.body.push(node);
+      wrapperBlock.body.push(createBranchExitNotifier(false, branchIID));
+      transferLoc(node, wrapperBlock);
+      return wrapperBlock;
     }
 
 
