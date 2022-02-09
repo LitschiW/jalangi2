@@ -202,6 +202,7 @@ if (typeof J$ === 'undefined') {
     var origCodeFileName;
     var instCodeFileName;
     var iidSourceInfo;
+    var forIId;
 
 
     function getIid() {
@@ -796,12 +797,12 @@ if (typeof J$ === 'undefined') {
     }
   }
   
-  function createBranchExitNotifier(isSwitch) {
+  function createBranchExitNotifier(isSwitch, branchIID) {
     const exit_node = {
       type: Syntax.ExpressionStatement,
       expression: {
         type: Syntax.CallExpression,
-        arguments: [createLiteralAst(isSwitch)],
+        arguments: [createLiteralAst(branchIID), createLiteralAst(isSwitch)],
         callee: {
           type: Syntax.MemberExpression,
           computed: false,
@@ -815,8 +816,27 @@ if (typeof J$ === 'undefined') {
   }
 
 
-  function createBranchEnterNotifier(caseNode) {
-    return createConditionalNotifierNode(caseNode,"C3");
+  function createBranchEnterNotifier(branchParentNode, isSwitch, isCase, isFor,isIf) {    
+    printCondIidToLoc(branchParentNode);
+    const notifierNode = {
+      type: Syntax.ExpressionStatement,
+      expression: {
+        type: Syntax.CallExpression,
+        arguments: [
+            getCondIid(), 
+            createLiteralAst(isSwitch),
+            createLiteralAst(isCase),
+            createLiteralAst(isFor),
+            createLiteralAst(isIf)],
+        callee: {
+          type: Syntax.MemberExpression,
+          computed: false,
+          object: createIdentifierAst(JALANGI_VAR),
+          property: createIdentifierAst("C3"),
+        },
+      },
+    };
+    return notifierNode;
   }
 
   function createBreakNotifier(breakNode){
@@ -1610,6 +1630,12 @@ if (typeof J$ === 'undefined') {
 
     function funCond(node) {
         const wrapperBlock = {type: 'BlockStatement', body: []};
+        const branchIID = condIid;
+
+        if(node.type === "IfStatement") {
+            wrapperBlock.body.push(createBranchEnterNotifier(node,false,false,false,true))
+        }
+
 
         var ret = wrapConditional(node.test, node.test);
         node.test = ret;
@@ -1617,10 +1643,16 @@ if (typeof J$ === 'undefined') {
         node.init = wrapWithX1(node, node.init);
         node.update = wrapWithX1(node, node.update);
 
-        const addEnterNotifierToBody = (node) => {
-            if(node){ 
-                node.body.splice(0, 0, createBranchEnterNotifier(node));
-                node.body.push(createBranchExitNotifier(false));
+        const addEnterNotifierToBody = (bodyNode) => {
+            if (bodyNode) {
+              const branchIid = condIid;
+              bodyNode.body.splice(0, 0, createBranchEnterNotifier(bodyNode,
+                false,
+                false,
+                node.type===Syntax.ForStatement,
+                node.type===Syntax.IfStatement));            
+              bodyNode.body.push(createBranchExitNotifier(false, branchIid));
+              
             }
         }
         addEnterNotifierToBody(node.consequent);
@@ -1629,7 +1661,7 @@ if (typeof J$ === 'undefined') {
         
 
         wrapperBlock.body.push(node)
-        wrapperBlock.body.push(createBranchExitNotifier(false))
+        wrapperBlock.body.push(createBranchExitNotifier(false, branchIID))
         transferLoc(node,wrapperBlock);
         return wrapperBlock;
     }
@@ -1673,6 +1705,7 @@ if (typeof J$ === 'undefined') {
         },
         "SwitchStatement": function (node) {
             const block = {type: Syntax.BlockStatement, body: []}
+            const switchIID= condIid;
 
             //wrap switch discriminant and cases
             var dis = wrapSwitchDiscriminant(node.discriminant, node.discriminant);
@@ -1683,7 +1716,11 @@ if (typeof J$ === 'undefined') {
                     test = wrapSwitchTest(acase);
                     acase.test = wrapWithX1(acase.test, test);
                 }
-                const defaultNotifierNode = createBranchEnterNotifier(acase);
+                const defaultNotifierNode = createBranchEnterNotifier(acase,
+                    false,
+                    true,
+                    false,
+                    false);
                 acase.consequent.splice(0, 0, defaultNotifierNode);
                 return acase;
             });
@@ -1692,7 +1729,7 @@ if (typeof J$ === 'undefined') {
             block.body.push(node);
 
             //add signaling node for J$.CE()
-            const signal_node = createBranchExitNotifier(true);
+            const signal_node = createBranchExitNotifier(true, switchIID);
             block.body.push(signal_node);
 
             //roughly adjust block location

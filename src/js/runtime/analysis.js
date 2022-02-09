@@ -722,20 +722,15 @@ if (typeof J$ === 'undefined') {
         return (lastComputedValue = right);
     }
 
-    function C3(iid, isElseBranch, isSwitchBranch, isForBranch) {
+    function C3(iid, isSwitch, isCase, isFor, isIf) {
       if (sandbox.analysis && sandbox.analysis.enterBranch) {
-        sandbox.analysis.enterBranch(
-          iid,
-          isElseBranch,
-          isSwitchBranch,
-          isForBranch
-        );
+        sandbox.analysis.enterBranch(iid, isSwitch, isCase, isFor, isIf);
       }
     }
 
-    function CE(isSwitch) {
+    function CE(branchIID, isSwitch) {
         if(sandbox.analysis && sandbox.analysis.conditionalExit) {
-            sandbox.analysis.conditionalExit(createBitPattern(isSwitch));
+            sandbox.analysis.conditionalExit(branchIID, createBitPattern(isSwitch));
         }
     }
 
