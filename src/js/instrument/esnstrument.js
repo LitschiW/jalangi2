@@ -884,10 +884,9 @@ if (typeof J$ === 'undefined') {
         if (!Config.INSTR_CONDITIONAL || Config.INSTR_CONDITIONAL("other", node)) {
             printCondIidToLoc(node);
             var ret = replaceInExpr(
-                logConditionalFunName + "(" + RP + "1, " + RP + "2, " + RP + "3)",
+                logConditionalFunName + "(" + RP + "1, " + RP + "2)",
                 getCondIid(),
-                test,
-                createLiteralAst(true)
+                test
             );
             transferLoc(ret, node);
             return ret;
@@ -1646,6 +1645,9 @@ if (typeof J$ === 'undefined') {
       );
 
       var ret = wrapConditional(node.test, node.test);
+      ret.arguments.push(createLiteralAst(node.type === Syntax.IfStatement));
+      ret.arguments.push(createLiteralAst(node.type === Syntax.IfStatement && node.alternate !== null));
+      ret.arguments.push(createLiteralAst(node.type === Syntax.ForStatement));
       node.test = ret;
       node.test = wrapWithX1(node, node.test);
       node.init = wrapWithX1(node, node.init);

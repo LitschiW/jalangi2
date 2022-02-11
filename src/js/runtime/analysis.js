@@ -713,7 +713,7 @@ if (typeof J$ === 'undefined') {
         result = B(iid+1, "===", switchLeft, right, createBitPattern(false, false, true));
 
         if (sandbox.analysis && sandbox.analysis.conditional) {
-      aret = sandbox.analysis.conditional(iid, result, true, false);
+      aret = sandbox.analysis.conditional(iid, result, true, false, false,false);
             if (aret) {
                 if (result && !aret.result) {
                     right = !right;
@@ -725,14 +725,15 @@ if (typeof J$ === 'undefined') {
         return (lastComputedValue = right);
     }
 
-  function C3(iid, isSwitch, isCase, isLoop, isConditional) {
+  function C3(iid, isSwitch, isCase,isConditional, hasElse, isLoop) {
     if (sandbox.analysis && sandbox.analysis.enterBranch) {
       sandbox.analysis.enterBranch(
         iid,
         isSwitch,
         isCase,
-        isLoop,
-        isConditional
+        isConditional,
+        hasElse,
+        isLoop
       );
     }
   }
@@ -751,10 +752,10 @@ if (typeof J$ === 'undefined') {
   }
 
     // Expression in conditional
-  function C(iid, left, isConditional = false) {
+  function C(iid, left, isIf = false, hasElse = false, isFor = false) {
         var aret;
         if (sandbox.analysis && sandbox.analysis.conditional) {
-      aret = sandbox.analysis.conditional(iid, left, false, isConditional);
+      aret = sandbox.analysis.conditional(iid, left, false, isIf, hasElse, isFor);
             if (aret) {
                 left = aret.result;
             }
